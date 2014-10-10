@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Simple Chat</title>
+	<style type="text/css">
+	body{
+		font-family: helvetica, arial, sans-serif;
+		font-size: 14px;
+	}	
+	.chat-box{
+		position:fixed;bottom:10px;
+		width: 100%;
+	}
+	input{
+		padding: 10px;
+		border:1px solid #DDD;
+	}
+	#message-form input{
+		width: 60%;
+	}
+	button{
+		padding: 10px;
+		border:1px solid #DDD;
+		background-color: #DDD;
+		color: #333;
+	}
+	ul{
+		list-style: none;
+		display: table;
+	}
+	ul li{
+		list-style: none;
+	}
+	.right{
+		float: right;
+	}
+	.clear{
+		clear: both;
+	}
+	.hide{
+		display: none;
+	}
+	#name-form button{
+		width:100%;
+	}
+	#messages{
+		max-height: 600px;
+		overflow: auto;
+	}
+	#messages li {
+		padding: 5px;
+	}
+	#typing{
+		color: #22ff33;
+		font-style: italic;
+	}
+	</style>
+</head>
+<body>
+<ul id="messages">
+	
+</ul>
+<div class="right hide" id="name-setter">
+	<form id="name-form">
+		<h3>Set Your Name</h3>
+		<input	type="text" name="name" id="name" placeholder="your name" />
+		<br/>
+		<br/>
+		<button type="submit">Set Name</button>
+	</form>
+</div>
+<div class="clear"></div>
+<div class="chat-box">
+	<form id="message-form">
+		<input type="text" id="m" autocomplete="off">
+		<button type="submit" >Send</button>
+		<button id="setname" type="button">Set Name</button>
+	</form>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+
+	window.onload = function(){
+		var messages = $.parseJSON(localStorage.getItem('messages'));
+		if(messages!=null)
+		for (var i = 0; i < messages.length; i++) {
+			
+			user  = messages[i].username;
+			
+			if(messages[i].username==localStorage.getItem('username')) user  = "You";
+
+			var li = "<li><strong>"+user+"</strong> said : "+messages[i].msg+"</li>";
+			$('#messages').append($(li));			
+		};
+	}
+
+
+  	var socket = io();
+  	var name   = localStorage.username || "user";
+
+    $('#message-form').submit(function(e){
+    	e.preventDefault();
+    	var msg = $('#m').val();
+		var li = "<li><strong>"+'You'+"</strong> said : "+msg+"</li>";
+		$('#messages').append($(li));
+
+		var messages = $.parseJSON(localStorage.getItem('messages')) || [];
+
+		messages.push({username:name,msg : msg});
+
+		localStorage.setItem('messages',JSON.stringify(messages));
+
+    	socket.emit('chat message', {message:msg,username:localStorage.username});
+    	$('#m').val('');
+    	return false;
+  	});
+
+    $('#name-form').submit(function(e){
+    	e.preventDefault();
+    	name = $('#name').val();
+    	if(name){
+    		$('#name-setter').fadeOut();
+    		localStorage.username = name;
+    		socket.emit('add user',name);
+    	}
+    });
+
+	$('#setname').click(function(){
+		$('#name-setter').toggle('down');
+	});
+
+	$('#m').focus(function(){
+		socket.emit('typing');
+	});
+
+	socket.on('chat message', function(msg){
+
+		var messages = $.parseJSON(localStorage.getItem('messages')) || [];
+
+		messages.push({username:msg.name,msg : msg.message});
+
+		localStorage.setItem('messages',JSON.stringify(messages));
+
+		var li = "<li><strong>"+(msg.name==name?'You':msg.name)+"</strong> said : "+msg.message+"</li>";
+    	$('#messages').append($(li));
+  	});
+
+	socket.on('typing',function(msg){
+		
+		msg.typing = true;msg.message = " is typing";
+		var li = "<li id='typing'>"+msg.username+msg.message+" </li>";
+		$('#typing').remove();
+		$('#messages').append($(li));
+	});
+
+</script>
+</body>
+</html>
