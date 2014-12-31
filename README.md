@@ -15,4 +15,4 @@ please follow following instructions to use the code
 4. node index.js
 
 
-Thats all!! you need to do and open the url in two different browsers to see the wrking demo of your newly created chat application.
+Thats all!! you need to do and open the url http://localhost:3000 in two different browsers to see the wrking demo of your newly created chat application.
